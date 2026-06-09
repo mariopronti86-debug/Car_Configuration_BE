@@ -40,3 +40,9 @@ class CarModel(Base):
         d = self.to_dict()
         d["optionals"] = [o.to_dict() for o in self.optionals]
         return d
+    
+    def __repr__(self):
+        return f"CarModel(model_id={self.model_id}, brand={self.brand}, name={self.name}, base_price={self.base_price})"
+ 
+    def __str__(self):
+        return f"{self.brand} {self.name} - {self.category} - da {self.base_price}€"

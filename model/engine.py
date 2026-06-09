@@ -17,3 +17,9 @@ class Engine(Base):
             "power_hp": self.power_hp,
             "extra_price": float(self.extra_price),
         }
+    
+    def __repr__(self):
+        return f"Engine(engine_id={self.engine_id}, fuel_type={self.fuel_type}, power_hp={self.power_hp}cv, extra_price={self.extra_price})"
+ 
+    def __str__(self):
+        return f"{self.fuel_type} - {self.power_hp}cv (+{self.extra_price}€)"

@@ -36,3 +36,9 @@ class Compatibility(Base):
             "rule_id": self.rule_id,
             "rule_type": self.rule.rule_type if self.rule else None,
         }
+    
+    def __repr__(self):
+        return f"Compatibility(id={self.compatibility_id}, opt_a={self.optional_id}, opt_b={self.optional_with_id}, rule={self.rule_id})"
+ 
+    def __str__(self):
+        return f"Optional {self.optional_id} <-> Optional {self.optional_with_id} [{self.rule.rule_type if self.rule else '?'}]"

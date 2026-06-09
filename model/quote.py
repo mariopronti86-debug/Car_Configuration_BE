@@ -27,3 +27,9 @@ class Quote(Base):
             "discount_pct": float(self.discount_pct),
             "configuration_id": self.configuration_id,
         }
+    
+    def __repr__(self):
+        return f"Quote(quote_id={self.quote_id}, number={self.quote_number}, status={self.status}, final={self.final_price})"
+ 
+    def __str__(self):
+        return f"{self.quote_number} - {self.status} - {self.final_price}€"

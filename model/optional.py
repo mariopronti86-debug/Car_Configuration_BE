@@ -20,3 +20,9 @@ class Optional(Base):
             "category": self.category,
             "price": float(self.price),
         }
+    
+    def __repr__(self):
+        return f"Optional(optional_id={self.optional_id}, name={self.name}, category={self.category}, price={self.price})"
+ 
+    def __str__(self):
+        return f"{self.name} [{self.category}] - {self.price}€"

@@ -40,3 +40,9 @@ class Configuration(Base):
             "engine": self.engine.to_dict() if self.engine else None,
             "optionals": [o.to_dict() for o in self.optionals],
         }
+    
+    def __repr__(self):
+        return f"Configuration(id={self.configuration_id}, name={self.name}, status={self.status}, total={self.total_price})"
+ 
+    def __str__(self):
+        return f"{self.name} - {self.status} - {self.total_price}€"

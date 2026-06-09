@@ -1,27 +1,38 @@
 from sqlalchemy import select, or_, and_
 from model.compatibility import Compatibility, CompatibilityRule
 
-
+ 
+# GET ALL RULES
 def get_all_rules(session):
     return session.execute(select(CompatibilityRule)).scalars().all()
-
+ 
+ 
+# GET RULE BY ID
 def get_rule_by_id(session, rule_id):
     return session.get(CompatibilityRule, rule_id)
-
-def save_rule(session, rule):
+ 
+ 
+# CREATE RULE
+def create_rule(session, rule):
     session.add(rule)
     session.commit()
     return rule
-
-def delete_rule(session, rule):
+ 
+ 
+# DELETE RULE
+def delete_rule_by_id(session, rule):
     session.delete(rule)
     session.commit()
+ 
 
-def get_all_compatibilities(session):
+ 
+# GET ALL
+def get_all(session):
     return session.execute(select(Compatibility)).scalars().all()
-
+ 
+ 
+# GET BETWEEN: cerca la regola tra due optional in qualsiasi ordine
 def get_between(session, opt_a, opt_b):
-    """Restituisce la regola tra due optional (in qualsiasi ordine)."""
     return session.execute(
         select(Compatibility).where(
             or_(
@@ -30,20 +41,28 @@ def get_between(session, opt_a, opt_b):
             )
         )
     ).scalars().first()
-
+ 
+ 
+# GET BY OPTIONAL: tutte le regole che coinvolgono un dato optional
 def get_by_optional(session, optional_id):
-    """Tutte le regole che coinvolgono un dato optional."""
     return session.execute(
         select(Compatibility).where(
-            or_(Compatibility.optional_id == optional_id, Compatibility.optional_with_id == optional_id)
+            or_(
+                Compatibility.optional_id == optional_id,
+                Compatibility.optional_with_id == optional_id,
+            )
         )
     ).scalars().all()
-
-def save_compatibility(session, compatibility):
+ 
+ 
+# CREATE
+def create(session, compatibility):
     session.add(compatibility)
     session.commit()
     return compatibility
-
-def delete_compatibility(session, compatibility):
+ 
+ 
+# DELETE
+def delete_by_id(session, compatibility):
     session.delete(compatibility)
     session.commit()

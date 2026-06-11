@@ -1,232 +1,334 @@
-# Configuratore Auto — Backend Documentation
+# AutoElite – Backend API
 
-## Stack
-- **Flask** — framework HTTP
-- **SQLAlchemy** — ORM con Joined Table Inheritance
-- **PostgreSQL** — database relazionale
-- **PyJWT + bcrypt** — autenticazione JWT e hashing password
+Progetto finale del corso **Software Development 2025/2026**.
+
+Piattaforma per la configurazione personalizzata di automobili con generazione di preventivi. Gli utenti possono selezionare modello, motorizzazione e optional, il sistema verifica le compatibilità tra componenti e calcola il prezzo in tempo reale.
 
 ---
 
-## Struttura del Progetto
+## Tecnologie
+
+| Layer | Tecnologia |
+|---|---|
+| Backend | Python / Flask |
+| ORM | SQLAlchemy |
+| Database | PostgreSQL |
+| Autenticazione | JWT (PyJWT) |
+| Password | bcrypt |
+| Architettura | MVC — Model / Repository / Service / Controller |
+
+---
+
+## Struttura del progetto
 
 ```
-car_config/
-├── app.py                          # Entry point Flask
+Car_Configuration_BE/
+├── app.py                          # Entry point, registra tutti i blueprint
 ├── requirements.txt
+│
 ├── persistence/
-│   └── db_config.py                # Engine SQLAlchemy, init_db, get_session
-├── model/
-│   ├── user.py                     # User (base) → Client, Admin  [ISA]
-│   ├── engine.py                   # Engine (motorizzazione)
-│   ├── car_model.py                # CarModel (modello auto)
-│   ├── optional.py                 # Optional + tabella model_optional
-│   ├── compatibility.py            # Compatibility + CompatibilityRule
-│   ├── configuration.py            # Configuration + tabella configuration_optional
-│   └── quote.py                    # Quote (preventivo)
-├── repository/
-│   ├── user_repository.py
-│   ├── engine_repository.py
-│   ├── car_model_repository.py
-│   ├── optional_repository.py
-│   ├── compatibility_repository.py
-│   ├── configuration_repository.py
-│   └── quote_repository.py
-├── service/
-│   ├── auth_service.py
-│   ├── engine_service.py
-│   ├── car_model_service.py
-│   ├── optional_service.py
-│   ├── compatibility_service.py
-│   ├── configuration_service.py
-│   └── quote_service.py
-├── controller/
-│   ├── auth_controller.py          # Decorators token_required, role_required
-│   ├── engine_controller.py
-│   ├── car_model_controller.py
-│   ├── optional_controller.py
-│   ├── compatibility_controller.py
-│   ├── configuration_controller.py
-│   └── quote_controller.py
+│   └── db_config.py                # Connessione DB, Base, init_db()
+│
+├── model/                          # Entità mappate su tabelle PostgreSQL
+│   ├── user.py                     # User / Client / Admin (Joined Table Inheritance)
+│   ├── engine.py                   # Motorizzazioni
+│   ├── car_model.py                # Modelli auto (N:M con Optional)
+│   ├── optional.py                 # Optional/accessori
+│   ├── compatibility.py            # Regole di compatibilità tra optional
+│   ├── configuration.py            # Configurazione utente (N:M con Optional)
+│   └── quote.py                    # Preventivi
+│
+├── repository/                     # Accesso al DB — get_all / get_by_id / create / update / delete_by_id
+│   └── ...
+│
+├── service/                        # Logica di business
+│   └── ...
+│
+├── controller/                     # Blueprint Flask — routing e risposte HTTP
+│   └── ...
+│
 └── docs/
-    ├── DDL.sql
-    └── README.md
+    ├── DDL/10_CREATE.sql           # Crea tutte le tabelle
+    └── DML/10_INSERT.sql           # Dati di esempio
 ```
 
 ---
 
-## Setup
+## Installazione e avvio
+
+### 1. Clona il progetto e installa le dipendenze
 
 ```bash
-# 1. Crea il database
-createdb car_config;
-
-# 2. Installa dipendenze
 pip install -r requirements.txt
+```
 
-# 3. (Opzionale) modifica la stringa di connessione in persistence/db_config.py
+### 2. Crea il database PostgreSQL
 
-# 4. Avvia l'app (crea le tabelle automaticamente)
+```bash
+# Connettiti a PostgreSQL e crea il database
+psql -U postgres
+
+CREATE DATABASE car_config;
+\q
+
+# Esegui DDL e DML
+psql -U postgres -d car_config -f docs/DDL/10_CREATE.sql
+psql -U postgres -d car_config -f docs/DML/10_INSERT.sql
+```
+
+### 3. Configura la connessione
+
+In `persistence/db_config.py` modifica la stringa di connessione con le tue credenziali:
+
+```python
+engine = create_engine("postgresql://postgres:TUA_PASSWORD@localhost/car_config", echo=True)
+```
+
+### 4. Avvia il server
+
+```bash
 python app.py
 ```
 
----
-
-## API Reference
-
-### Auth  `/api/auth`
-
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| POST | `/register` | — | Registra un nuovo client |
-| POST | `/login` | — | Login, restituisce JWT |
-| GET | `/me` | client/admin | Dati utente corrente |
-| GET | `/users` | admin | Lista tutti i client e admin |
-| POST | `/admin` | admin | Crea un nuovo admin |
-
-**Register body:**
-```json
-{ "first_name": "Mario", "last_name": "Rossi", "email": "mario@example.com", "password": "1234" }
-```
-
-**Login body / risposta:**
-```json
-// request
-{ "email": "mario@example.com", "password": "1234" }
-// response
-{ "token": "eyJ...", "user": { "user_id": 1, "tipo": "client", ... } }
-```
+Il server parte su **http://localhost:5001**
 
 ---
 
-### Engine  `/api/engines`
+## Credenziali di test
 
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| GET | `/` | — | Lista motori |
-| GET | `/<id>` | — | Dettaglio motore |
-| POST | `/` | admin | Crea motore |
-| PUT | `/<id>` | admin | Aggiorna motore |
-| DELETE | `/<id>` | admin | Elimina motore |
-
----
-
-### CarModel  `/api/models`
-
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| GET | `/` | — | Lista modelli (con engine) |
-| GET | `/<id>` | — | Dettaglio modello |
-| GET | `/<id>/optionals` | — | Optional disponibili per modello |
-| POST | `/` | admin | Crea modello |
-| PUT | `/<id>` | admin | Aggiorna modello |
-| DELETE | `/<id>` | admin | Elimina modello |
-| POST | `/<id>/optionals/<opt_id>` | admin | Aggiunge optional al modello |
-| DELETE | `/<id>/optionals/<opt_id>` | admin | Rimuove optional dal modello |
-
----
-
-### Optional  `/api/optionals`
-
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| GET | `/` | — | Lista optional |
-| GET | `/<id>` | — | Dettaglio optional |
-| POST | `/` | admin | Crea optional |
-| PUT | `/<id>` | admin | Aggiorna optional |
-| DELETE | `/<id>` | admin | Elimina optional |
-
----
-
-### Compatibility  `/api/compatibility`
-
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| GET | `/rules` | admin | Lista regole |
-| POST | `/rules` | admin | Crea regola (`rule_type`: `incompatible` \| `requires`) |
-| DELETE | `/rules/<id>` | admin | Elimina regola |
-| GET | `/` | admin | Lista compatibility entries |
-| POST | `/` | admin | Crea entry (`optional_id`, `optional_with_id`, `rule_id`) |
-| DELETE | `/<id>` | admin | Elimina entry |
-| POST | `/check` | client/admin | Verifica lista optional (`{"optional_ids": [1,2,3]}`) |
-
----
-
-### Configuration  `/api/configurations`
-
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| GET | `/` | client/admin | Lista configurazioni (client: solo proprie) |
-| GET | `/<id>` | client/admin | Dettaglio configurazione |
-| POST | `/` | client | Crea configurazione |
-| PUT | `/<id>` | client/admin | Aggiorna configurazione |
-| DELETE | `/<id>` | client/admin | Elimina configurazione |
-
-**Create body:**
-```json
-{
-  "name": "La mia Stelvio",
-  "model_id": 2,
-  "engine_id": 3,
-  "optional_ids": [1, 3, 5]
-}
-```
-
----
-
-### Quote  `/api/quotes`
-
-| Metodo | URL | Auth | Descrizione |
-|--------|-----|------|-------------|
-| GET | `/` | client/admin | Lista preventivi (client: solo propri) |
-| GET | `/<id>` | client/admin | Dettaglio preventivo |
-| POST | `/generate/<configuration_id>` | client/admin | Genera preventivo da configurazione |
-| PUT | `/<id>/status` | client/admin | Aggiorna status |
-| DELETE | `/<id>` | admin | Elimina preventivo |
-
-**Generate body (opzionale):**
-```json
-{ "discount_pct": 5.0 }
-```
-
-**Update status body:**
-```json
-{ "status": "accepted" }
-```
-Status validi: `pending` | `accepted` | `rejected` | `expired`
+| Ruolo | Email | Password |
+|---|---|---|
+| Admin | admin@autoelite.it | Admin123! |
+| Client | mario.rossi@email.com | Client123! |
 
 ---
 
 ## Autenticazione
 
-Tutte le rotte protette richiedono l'header:
+Tutte le rotte protette richiedono il token JWT nell'header:
+
 ```
 Authorization: Bearer <token>
 ```
 
-Il token JWT contiene: `user_id`, `email`, `ruolo` (`client` | `admin`), scadenza (8h).
+Il token si ottiene con `POST /api/auth/login` e scade dopo **8 ore**.
 
 ---
 
-## Scelte Progettuali
+## API Reference
 
-### ISA (User → Client / Admin)
-Implementata con **Joined Table Inheritance** di SQLAlchemy, fedele al diagramma ER. La colonna `tipo` in `app_user` è il discriminante. Client e Admin hanno tabelle separate con campi specifici.
+### Auth — `/api/auth`
 
-### Calcolo Prezzo
-Il `total_price` di una Configuration è calcolato nel service: `base_price (modello) + extra_price (motore) + Σ price (optional selezionati)`. Viene ricalcolato ad ogni update.
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| POST | `/register` | Pubblico | Registra un nuovo client |
+| POST | `/login` | Pubblico | Login — restituisce il token JWT |
+| GET | `/me` | Client, Admin | Profilo dell'utente loggato |
+| GET | `/users` | Admin | Lista tutti gli utenti |
+| POST | `/admin` | Admin | Crea un nuovo admin |
 
-### Compatibilità
-Due tipologie di regole:
-- **incompatible**: i due optional non possono coesistere nella stessa configurazione
-- **requires**: se A è selezionato, B deve essere presente
+**Esempio login:**
+```json
+POST /api/auth/login
+{
+  "email": "mario.rossi@email.com",
+  "password": "Client123!"
+}
+```
 
-La verifica avviene nel `compatibility_service.check_optional_list()` prima di salvare o aggiornare una configurazione.
+**Risposta:**
+```json
+{
+  "token": "eyJ...",
+  "user": { "user_id": 2, "tipo": "client", "email": "mario.rossi@email.com" }
+}
+```
 
-### Autorizzazioni
-- **Admin**: accesso completo a tutti gli endpoint, CRUD su catalogo, visione di tutte le configurazioni/preventivi
-- **Client**: può creare/modificare/eliminare solo le proprie configurazioni, generare e accettare/rifiutare i propri preventivi
-- **Pubblico**: lettura del catalogo (modelli, motori, optional) per supportare il frontend del configuratore
+---
 
-## Autore
-Mario Pronti — Corso Software Development 2025/2026
+### Motorizzazioni — `/api/engines`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/` | Pubblico | Lista tutte le motorizzazioni |
+| GET | `/<engine_id>` | Pubblico | Dettaglio motorizzazione |
+| POST | `/` | Admin | Crea motorizzazione |
+| PUT | `/<engine_id>` | Admin | Modifica motorizzazione |
+| DELETE | `/<engine_id>` | Admin | Elimina motorizzazione |
+
+---
+
+### Modelli auto — `/api/models`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/` | Pubblico | Lista tutti i modelli |
+| GET | `/<model_id>` | Pubblico | Dettaglio modello con optional disponibili |
+| POST | `/` | Admin | Crea modello |
+| PUT | `/<model_id>` | Admin | Modifica modello |
+| DELETE | `/<model_id>` | Admin | Elimina modello |
+| POST | `/<model_id>/optionals/<optional_id>` | Admin | Aggiunge optional al catalogo del modello |
+| DELETE | `/<model_id>/optionals/<optional_id>` | Admin | Rimuove optional dal catalogo del modello |
+
+---
+
+### Optional — `/api/optionals`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/` | Pubblico | Lista tutti gli optional |
+| GET | `/<optional_id>` | Pubblico | Dettaglio optional |
+| GET | `/model/<model_id>` | Pubblico | Optional disponibili per un modello |
+| POST | `/` | Admin | Crea optional |
+| PUT | `/<optional_id>` | Admin | Modifica optional |
+| DELETE | `/<optional_id>` | Admin | Elimina optional |
+
+---
+
+### Compatibilità — `/api/compatibility`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/rules` | Pubblico | Lista le regole (`incompatible`, `requires`) |
+| POST | `/rules` | Admin | Crea una regola |
+| DELETE | `/rules/<rule_id>` | Admin | Elimina una regola |
+| GET | `/` | Pubblico | Lista tutte le regole tra optional |
+| POST | `/` | Admin | Crea una regola tra due optional |
+| DELETE | `/<compatibility_id>` | Admin | Elimina una regola tra optional |
+
+**Tipi di regola:**
+- `incompatible` — i due optional non possono essere scelti insieme
+- `requires` — il primo optional richiede obbligatoriamente il secondo
+
+---
+
+### Configurazioni — `/api/configurations`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/` | Client, Admin | Lista configurazioni (client vede solo le sue) |
+| GET | `/<configuration_id>` | Client, Admin | Dettaglio completo |
+| POST | `/` | Client, Admin | Crea una nuova configurazione |
+| PUT | `/<configuration_id>` | Client, Admin | Modifica configurazione |
+| DELETE | `/<configuration_id>` | Client, Admin | Elimina configurazione |
+
+**Esempio creazione configurazione:**
+```json
+POST /api/configurations
+{
+  "name": "La mia Audi",
+  "model_id": 1,
+  "engine_id": 2,
+  "optional_ids": [3, 5, 9]
+}
+```
+
+**Stati possibili:** `draft` → `saved` → `quoted`
+
+> Una configurazione in stato `quoted` non può essere modificata.
+
+---
+
+### Preventivi — `/api/quotes`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/` | Client, Admin | Lista preventivi (client vede solo i suoi) |
+| GET | `/<quote_id>` | Client, Admin | Dettaglio preventivo |
+| GET | `/<quote_id>/export` | Client, Admin | Dati strutturati per stampa/PDF |
+| POST | `/generate/<configuration_id>` | Client, Admin | Genera preventivo da una configurazione |
+| PUT | `/<quote_id>/status` | Client, Admin | Aggiorna stato preventivo |
+| DELETE | `/<quote_id>` | Admin | Elimina preventivo |
+
+**Esempio generazione preventivo:**
+```json
+POST /api/quotes/generate/1
+{
+  "discount_pct": 5
+}
+```
+
+**Stati preventivo:** `pending` → `accepted` / `rejected` / `expired`
+
+> Il client può solo portare un preventivo a `accepted` o `rejected`.
+> L'admin può impostare qualsiasi stato.
+
+**Esempio export preventivo (`GET /api/quotes/1/export`):**
+```json
+{
+  "preventivo": {
+    "numero": "QT-2025-0001",
+    "data": "15/01/2025",
+    "stato": "pending",
+    "prezzo_finale": 38665.00,
+    "sconto_pct": 5.0
+  },
+  "cliente": {
+    "nome": "Mario Rossi",
+    "email": "mario.rossi@email.com",
+    "telefono": "333-1234567"
+  },
+  "configurazione": {
+    "nome": "La mia Audi",
+    "marca": "Audi",
+    "modello": "A3 Sportback",
+    "prezzo_base": 35000.0,
+    "motorizzazione": { "tipo": "Diesel", "potenza_cv": 200, "extra_prezzo": 2000.0 },
+    "optional": [
+      { "nome": "Tetto panoramico", "categoria": "Esterno", "prezzo": 2500.0 }
+    ],
+    "prezzo_totale": 40700.0
+  }
+}
+```
+
+---
+
+### Dashboard Admin — `/api/admin`
+
+| Metodo | Endpoint | Accesso | Descrizione |
+|---|---|---|---|
+| GET | `/dashboard` | Admin | Statistiche generali della piattaforma |
+
+**Risposta:**
+```json
+{
+  "clienti": 3,
+  "modelli": 4,
+  "configurazioni": { "totale": 12, "per_stato": { "draft": 5, "saved": 4, "quoted": 3 } },
+  "preventivi": { "totale": 3, "per_stato": { "pending": 2, "accepted": 1 }, "fatturato": 38665.00 }
+}
+```
+
+---
+
+## Schema database
+
+```
+app_user ──< client ──< configuration >──< configuration_optional >── optional
+                                │                                        │
+                              model                               compatibility
+                                │                                  (regole N:M
+                             engine                               tra optional)
+                                │
+                             quote
+```
+
+**11 tabelle:** `app_user`, `client`, `admin`, `engine`, `model`, `optional`, `model_optional`, `compatibility_rule`, `compatibility`, `configuration`, `configuration_optional`, `quote`
+
+---
+
+## Gestione errori
+
+Tutti gli errori restituiscono JSON con il campo `error`:
+
+```json
+{ "error": "Descrizione del problema" }
+```
+
+| Codice | Significato |
+|---|---|
+| 400 | Dati non validi o regola di business violata |
+| 401 | Token mancante o non valido |
+| 403 | Accesso negato (ruolo insufficiente) |
+| 404 | Risorsa non trovata |
